@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ArboCity • Mapa</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+
+    #map { width: 100%; height: 60vh; border-radius: 8px; margin-bottom: 22px; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal {
+      width: 92%;
+      max-width: 520px;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .modal-header {
+      background-color: #185100; 
+      color: #fff;
+      padding: 14px 18px;
+      font-weight: 600;
+    }
+    .modal-body {
+      padding: 16px 18px;
+    }
+    .modal-body label { display:block; margin-bottom:6px; color:#333; font-weight:500; }
+    .modal-body input, .modal-body textarea {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .modal-actions {
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      padding: 12px 18px 18px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border-radius:6px;
+      font-weight:600;
+      cursor:pointer;
+      border: none;
+    }
+    .btn.primary { background:#185100; color:#fff; }
+    .btn.ghost { background:transparent; border:1px solid #ccc; color:#333; }
+
+    .marker {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    } 
+    .marker.official { background: #0b7a14; } 
+    .marker.local { background: #7fd26b; }      
+
+    .map-toolbar {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .map-toolbar .small-btn {
+      padding:8px 12px;
+      border-radius:6px;
+      border:1px solid #ddd;
+      background:#fff;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .map-toolbar .small-btn.warn {
+      border-color: #d9534f;
+      color: #d9534f;
+    }
+
+    .map-status {
+      margin-left: 10px;
+      color: #185100;
+      font-weight:500;
+    }
+
+    @media (max-width: 600px) {
+      .modal { width: 96%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+        <h1 class="logo">ArboCity</h1>
+        <nav>
+            <ul>
+                <li><a href="arbocity.html">Início</a></li>
+                <li><a href="index.html">Catálogo</a></li>
+                <li><a href="mapa.html" class="active">Mapa</a></li>
+            </ul>
+        </nav>
+    </div>
+  </header>
+
+  <main style="padding-top:88px;">
+    <section class="conteudo container">
+      <h2>Mapa Interativo</h2>
+      <p>Clique no mapa para adicionar uma árvore. Use o painel para limpar seus dados locais.</p>
+
+      <div class="map-toolbar">
+        <button id="btnShowLocal" class="small-btn">Mostrar apenas locais</button>
+        <button id="btnShowAll" class="small-btn">Mostrar todas</button>
+        <button id="btnResetLocal" class="small-btn warn">Resetar dados locais</button>
+        <div class="map-status" id="mapStatus">Carregando...</div>
+      </div>
+
+      <div id="map"></div>
+
+      <h3>Árvores Registradas</h3>
+      <ul id="listaArvores"></ul>
+    </section>
+  </main>
+
+  <footer style="margin-top:30px;">
+    <p>© 2025 ArboCity — Construindo cidades mais verdes.</p>
+  </footer>
+
+  <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <span id="modalTitle">Registrar Árvore</span>
+      </div>
+
+      <div class="modal-body">
+        <label for="treeName">Nome ou Espécie</label>
+        <input id="treeName" type="text" placeholder="Ex.: Ipê Amarelo" />
+
+        <label for="treeNotes">Observações (opcional)</label>
+        <textarea id="treeNotes" rows="3" placeholder="Altura, condição, etc."></textarea>
+
+        <div class="status" id="modalStatus" style="display:none;"></div>
+
+        <div class="modal-actions">
+          <button class="btn ghost" id="btnCancel">Cancelar</button>
+          <button class="btn primary" id="btnSave">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+   
+    const LS_KEY = 'arbo_local_arvores_v1'; 
+    const MAP_STATUS = document.getElementById('mapStatus');
+
+    
+    let arvores = [];      
+    let markers = {};      
+    let map;               
+    let lastClickedLatLng = null; 
+    let editingId = null;  
+
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const btnCancel = document.getElementById('btnCancel');
+    const btnSave = document.getElementById('btnSave');
+    const inputName = document.getElementById('treeName');
+    const inputNotes = document.getElementById('treeNotes');
+    const modalStatus = document.getElementById('modalStatus');
+
+    const btnResetLocal = document.getElementById('btnResetLocal');
+    const btnShowLocal = document.getElementById('btnShowLocal');
+    const btnShowAll = document.getElementById('btnShowAll');
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      setupModal();
+      setupToolbar();
+      carregarDados(); 
+    });
+
+    function initMap() {
+      const brasil = [-14.235004, -51.92528];
+      map = L.map('map').setView(brasil, 4);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      map.on('click', (e) => {
+        lastClickedLatLng = e.latlng;
+        openModal('create');
+      });
+
+      map.on('popupopen', (e) => {
+        const container = e.popup.getElement();
+        if (!container) return;
+
+        const editBtn = container.querySelector('.edit-btn');
+        if (editBtn) {
+          editBtn.addEventListener('click', () => {
+            const id = editBtn.getAttribute('data-id');
+            abrirEdicao(id);
+          });
+        }
+
+        const delBtn = container.querySelector('.del-btn');
+        if (delBtn) {
+          delBtn.addEventListener('click', () => {
+            const id = delBtn.getAttribute('data-id');
+            excluirLocal(id);
+          });
+        }
+      });
+    }
+
+
+    function setupModal() {
+      btnCancel.addEventListener('click', closeModal);
+      btnSave.addEventListener('click', onSaveFromModal);
+
+      modalBackdrop.addEventListener('click', (ev) => {
+        if (ev.target === modalBackdrop) closeModal();
+      });
+    }
+
+    function openModal(mode = 'create', arv = null) {
+
+      editingId = null;
+      inputName.value = '';
+      inputNotes.value = '';
+      modalStatus.style.display = 'none';
+
+      if (mode === 'edit' && arv) {
+        editingId = arv.id;
+        inputName.value = arv.nome || '';
+        inputNotes.value = arv.observacoes || '';
+        document.getElementById('modalTitle').textContent = 'Editar Árvore';
+      } else {
+        document.getElementById('modalTitle').textContent = 'Registrar Árvore';
+      }
+
+      modalBackdrop.style.display = 'flex';
+      inputName.focus();
+    }
+
+    function closeModal() {
+      editingId = null;
+      modalBackdrop.style.display = 'none';
+    }
+
+    function showModalStatus(msg, err = false) {
+      modalStatus.style.display = 'block';
+      modalStatus.textContent = msg;
+      modalStatus.style.color = err ? '#b32020' : '#185100';
+      setTimeout(() => { modalStatus.style.display = 'none'; }, 3000);
+    }
+
+    function onSaveFromModal() {
+      const nome = inputName.value.trim();
+      const obs = inputNotes.value.trim();
+
+      if (!nome) {
+        showModalStatus('Insira um nome ou espécie.', true);
+        return;
+      }
+
+      if (editingId) {
+
+        const idx = arvores.findIndex(a => a.id === editingId && a.source === 'local');
+        if (idx === -1) {
+          showModalStatus('Não foi possível localizar a árvore para editar.', true);
+          closeModal();
+          return;
+        }
+        arvores[idx].nome = nome;
+        arvores[idx].observacoes = obs;
+        arvores[idx].atualizadoEm = new Date().toISOString();
+
+        atualizarMarcador(arvores[idx]);
+        salvarLocalStorage();
+        atualizarLista();
+        showModalStatus('Árvore atualizada.');
+        closeModal();
+        return;
+      }
+
+      if (!lastClickedLatLng) {
+        showModalStatus('Coordenada inválida. Clique no mapa primeiro.', true);
+        return;
+      }
+
+      const nova = {
+        id: gerarId(),
+        nome,
+        observacoes: obs,
+        lat: roundCoord(lastClickedLatLng.lat),
+        lon: roundCoord(lastClickedLatLng.lng),
+        criadoEm: new Date().toISOString(),
+        source: 'local'
+      };
+
+      arvores.push(nova);
+      adicionarMarcador(nova);
+      salvarLocalStorage();
+      atualizarLista();
+      closeModal();
+      showModalStatus('Árvore salva localmente.');
+    }
+
+    async function carregarDados() {
+      MAP_SET_STATUS('Carregando dados...');
+
+      try {
+        const res = await fetch('arvores.json', {cache: "no-store"});
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            data.forEach(item => {
+
+              const obj = {
+                id: (item.id !== undefined) ? String(item.id) : gerarId(),
+                nome: item.nome || item.nome || 'Sem nome',
+                observacoes: item.observacoes || '',
+                lat: Number(item.lat),
+                lon: Number(item.lng ?? item.lon ?? item.lon),
+                criadoEm: item.criadoEm || new Date().toISOString(),
+                source: 'official'
+              };
+              arvores.push(obj);
+            });
+            console.log('arvores.json carregado. Total oficiais:', data.length);
+          } else {
+            console.warn('arvores.json não é um array.');
+          }
+        } else {
+          console.warn('arvores.json não encontrado ou não acessível (status ' + res.status + ').');
+        }
+      } catch (err) {
+        console.warn('Erro ao buscar arvores.json:', err);
+      }
+
+      const localRaw = window.localStorage.getItem(LS_KEY);
+      if (localRaw) {
+        try {
+          const localArr = JSON.parse(localRaw);
+          if (Array.isArray(localArr)) {
+
+            const ids = new Set(arvores.map(a => a.id));
+            localArr.forEach(l => {
+              if (!ids.has(l.id)) {
+                l.source = 'local';
+                arvores.push(l);
+              }
+            });
+            console.log('Dados locais carregados:', localArr.length);
+          }
+        } catch (e) {
+          console.warn('LocalStorage corrompido:', e);
+        }
+      }
+
+      adicionarTodosMarcadores();
+      atualizarLista();
+      MAP_SET_STATUS('Pronto');
+    }
+    function adicionarTodosMarcadores() {
+
+      for (const k in markers) {
+        try { map.removeLayer(markers[k]); } catch(e){}
+      }
+      markers = {};
+
+      arvores.forEach(a => adicionarMarcador(a));
+    }
+
+    function criarDivIcon(source) {
+      const className = source === 'official' ? 'marker official' : 'marker local';
+      return L.divIcon({
+        html: `<div class="${className}"></div>`,
+        className: '' , 
+        iconSize: [18,18],
+        iconAnchor: [9,9]
+      });
+    }
+
+    function adicionarMarcador(a) {
+      const icon = criarDivIcon(a.source);
+      const m = L.marker([Number(a.lat), Number(a.lon)], { icon }).addTo(map);
+
+      let popupHtml = `<strong>${escapeHtml(a.nome)}</strong><br>
+                       ${a.observacoes ? ('<em>' + escapeHtml(a.observacoes) + '</em><br>') : ''}
+                       <small style="color:#666">(${a.lat}, ${a.lon})</small><br>
+                       <small style="color:#666">Registrado: ${new Date(a.criadoEm).toLocaleString()}</small><br>`;
+
+      if (a.source === 'local') {
+
+        popupHtml += `<div style="margin-top:6px;">
+                        <button data-id="${a.id}" class="edit-btn" style="margin-right:8px;padding:6px 8px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;">Editar</button>
+                        <button data-id="${a.id}" class="del-btn" style="padding:6px 8px;border-radius:6px;border:1px solid #e0b0b0;background:#fff;color:#b32020;cursor:pointer;">Excluir</button>
+                      </div>`;
+      } else {
+
+        popupHtml += `<div style="margin-top:6px;"><small style="color:#185100;font-weight:600">Fonte: oficial</small></div>`;
+      }
+
+      m.bindPopup(popupHtml);
+      markers[a.id] = m;
+    }
+
+    function atualizarMarcador(a) {
+      const m = markers[a.id];
+      if (!m) {
+
+        adicionarMarcador(a);
+        return;
+      }
+
+      const popupHtml = `<strong>${escapeHtml(a.nome)}</strong><br>
+                         ${a.observacoes ? ('<em>' + escapeHtml(a.observacoes) + '</em><br>') : ''}
+                         <small style="color:#666">(${a.lat}, ${a.lon})</small><br>
+                         <small style="color:#666">Registrado: ${new Date(a.criadoEm).toLocaleString()}</small><br>
+                         <div style="margin-top:6px;">
+                           <button data-id="${a.id}" class="edit-btn" style="margin-right:8px;padding:6px 8px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;">Editar</button>
+                           <button data-id="${a.id}" class="del-btn" style="padding:6px 8px;border-radius:6px;border:1px solid #e0b0b0;background:#fff;color:#b32020;cursor:pointer;">Excluir</button>
+                         </div>`;
+      m.setPopupContent(popupHtml);
+    }
+
+    function abrirEdicao(id) {
+      const arv = arvores.find(a => a.id === id && a.source === 'local');
+      if (!arv) {
+        alert('Não foi possível localizar a árvore local para edição.');
+        return;
+      }
+      openModal('edit', arv);
+    }
+
+    function excluirLocal(id) {
+      if (!confirm('Confirma exclusão desta árvore local?')) return;
+      const idx = arvores.findIndex(a => a.id === id && a.source === 'local');
+      if (idx === -1) {
+        alert('Árvore local não encontrada.');
+        return;
+      }
+
+      const removed = arvores.splice(idx,1)[0];
+
+      if (markers[removed.id]) {
+        try { map.removeLayer(markers[removed.id]); } catch(e){}
+        delete markers[removed.id];
+      }
+
+      salvarLocalStorage();
+      atualizarLista();
+      MAP_SET_STATUS('Árvore local removida.');
+    }
+
+    function salvarLocalStorage() {
+      try {
+
+        const locais = arvores.filter(a => a.source === 'local');
+        window.localStorage.setItem(LS_KEY, JSON.stringify(locais));
+        console.log('LocalStorage atualizado (entradas locais):', locais.length);
+      } catch (e) {
+        console.warn('Erro ao salvar no LocalStorage:', e);
+      }
+    }
+
+    function resetarLocalStorage() {
+      if (!confirm('Deseja realmente apagar todas as suas árvores locais? Essa ação não afeta as árvores oficiais.')) return;
+
+      arvores = arvores.filter(a => a.source === 'official');
+
+      for (const id in markers) {
+        const m = markers[id];
+        const a = (arvores.find(x => x.id === id) || null);
+
+        if (!a) {
+          try { map.removeLayer(m); } catch(e){}
+          delete markers[id];
+        }
+      }
+
+      window.localStorage.removeItem(LS_KEY);
+      adicionarTodosMarcadores();
+      atualizarLista();
+      MAP_SET_STATUS('Dados locais resetados.');
+    }
+
+    function atualizarLista() {
+      const ul = document.getElementById('listaArvores');
+      ul.innerHTML = '';
+      if (!arvores.length) {
+        ul.innerHTML = '<li>Nenhuma árvore cadastrada ainda.</li>';
+        return;
+      }
+
+      const sorted = [...arvores].sort((a,b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+      sorted.forEach(a => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${escapeHtml(a.nome)}</strong> — ${a.source === 'official' ? '<small>Oficial</small>' : '<small>Local</small>'} (${a.lat}, ${a.lon}) — ${new Date(a.criadoEm).toLocaleString()}`;
+        ul.appendChild(li);
+      });
+    }
+
+    function setupToolbar() {
+      btnResetLocal.addEventListener('click', resetarLocalStorage);
+      btnShowLocal.addEventListener('click', () => {
+
+        for (const id in markers) {
+          const a = arvores.find(x => x.id === id);
+          if (a && a.source === 'official') {
+            try { map.removeLayer(markers[id]); } catch(e){}
+          }
+        }
+        MAP_SET_STATUS('Mostrando apenas árvores locais.');
+      });
+      btnShowAll.addEventListener('click', () => {
+        adicionarTodosMarcadores();
+        MAP_SET_STATUS('Mostrando todas as árvores.');
+      });
+    }
+
+
+    function gerarId() {
+      return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    }
+    function roundCoord(n) { return Number(Number(n).toFixed(6)); }
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+    function MAP_SET_STATUS(msg) {
+      MAP_STATUS.textContent = msg;
+    }
+  </script>
+</body>
+</html>
