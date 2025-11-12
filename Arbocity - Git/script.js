@@ -7,9 +7,10 @@ let arvores = JSON.parse(localStorage.getItem("arvores")) || [];
 
 function initLeaflet() {
 
-  const brasilCenter = [-14.235004, -51.92528];
+  const portoAlegreCenter = [-30.0277, -51.2287];
 
-  map = L.map('map').setView(brasilCenter, 4);
+ map = L.map('map').setView(portoAlegreCenter, 14);
+
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
@@ -86,3 +87,4 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', initLeaflet);
+
