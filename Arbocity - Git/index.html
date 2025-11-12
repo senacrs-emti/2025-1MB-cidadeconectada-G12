@@ -1,80 +1,369 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arbocity • Espécies de Árvores</title>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ArboCity • Catálogo</title>
+  <style>
+    :root{
+      --green:#185100;
+      --bg:#fafafa;
+      --card-bg:#fff;
+      --muted:#666;
+      --radius:10px;
+    }
+    /* ===== GLOBAL / LAYOUT ===== */
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:#222;
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
+    .container{width:90%;max-width:1100px;margin:0 auto;}
+
+    header{
+      background:var(--green);
+      color:#fff;
+      padding:14px 0;
+      box-shadow:0 2px 8px rgba(0,0,0,.12);
+    }
+    header .container{display:flex;align-items:center;justify-content:space-between;}
+    .logo{font-weight:700;font-size:1.2rem}
+    nav ul{display:flex;gap:18px;list-style:none;margin:0;padding:0}
+    nav a{color:#fff;text-decoration:none;font-weight:600;opacity:.95}
+    nav a.active{opacity:1;text-decoration:underline}
+
+    main{flex:1;padding:34px 0}
+    .conteudo{padding:0 0 40px 0}
+    .conteudo h2{color:var(--green);text-align:center;margin-bottom:18px;font-size:1.6rem}
+    .conteudo p{color:var(--muted);text-align:center;margin-bottom:22px}
+
+    /* ===== GRID DE CARDS ===== */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
+      gap:20px;
+      align-items:start;
+    }
+    .card-btn{
+      background:var(--card-bg);
+      border-radius:var(--radius);
+      box-shadow:0 4px 14px rgba(0,0,0,.06);
+      border:1px solid rgba(0,0,0,.03);
+      overflow:hidden;
+      cursor:pointer;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      transition:transform .18s ease, box-shadow .18s ease;
+      padding:0;
+    }
+    .card-btn:hover{ transform:translateY(-6px); box-shadow:0 10px 30px rgba(0,0,0,.12) }
+
+    .card-media{
+      width:100%;
+      aspect-ratio:1/1; /* garante imagem quadrada */
+      overflow:hidden;
+      background:#e9e9e9;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .card-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .card-body{
+      padding:12px 14px 18px;
+    }
+    .card-title{font-weight:700;color:var(--green);margin-bottom:6px}
+    .card-sub{font-size:.9rem;color:var(--muted)}
+
+    /* ===== MODAL ===== */
+    .modal-backdrop{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:3000;
+    }
+    .modal{
+      width:100%;
+      max-width:720px;
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+      max-height:90vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-media{
+      width:100%;
+      aspect-ratio:16/9;
+      background:#ddd;
+    }
+    .modal-media img{width:100%;height:100%;object-fit:cover;display:block}
+    .modal-content{padding:18px;overflow:auto}
+    .modal-row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .modal h3{margin:0 0 6px;color:var(--green)}
+    .sci{font-style:italic;color:#444;margin-bottom:6px}
+    .meta{font-weight:600;color:var(--muted);font-size:.95rem}
+    .desc{color:#333;line-height:1.5;margin-top:10px}
+    .modal-actions{display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #f0f0f0}
+    .btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+    .btn.ghost{background:transparent;border:1px solid #ddd}
+    .btn.primary{background:var(--green);color:#fff}
+
+    /* responsive */
+    @media (max-width:520px){
+      .modal{max-width:100%}
+      .card-body{padding:10px}
+    }
+
+    /* placeholder inline svg style for no-image */
+    .svg-placeholder{width:60%;opacity:.45}
+  </style>
 </head>
 <body>
-    <header>
+  <header>
     <div class="container">
-        <h1 class="logo">ArboCity</h1>
-        <nav>
-            <ul>
-                <li><a href="arbocity.html">Início</a></li>
-                <li><a href="index.html"class="active">Catálogo</a></li>
-                <li><a href="mapa.html" >Mapa</a></li>
-            </ul>
-        </nav>
+      <div class="logo">ArboCity</div>
+      <nav>
+        <ul>
+          <li><a href="arbocity.html">Início</a></li>
+          <li><a href="index.html" class="active">Catálogo</a></li>
+          <li><a href="mapa.html">Mapa</a></li>
+        </ul>
+      </nav>
     </div>
   </header>
 
-
+  <main class="container" style="padding-top:20px;">
     <section class="conteudo">
-        <h2>Catalógo de Árvores</h2>
-        <div class="cards">
-    <div class="card">
-        <h3>Ipê Amarelo</h3>
-        <p><em>Handroanthus albus</em></p>
-        <p>Floresce entre agosto e setembro, muito comum em ruas e praças, flores amarelas vibrantes.</p>
-    </div>
+      <h2>Catálogo de Árvores</h2>
+      <p>Clique em um card para ver as informações completas.</p>
 
-    <div class="card">
-        <h3>Araucária</h3>
-        <p><em>Araucaria angustifolia</em></p>
-        <p>Floresce entre setembro e outubro, sendo a árvore símbolo do sul do Brasil, pode chegar a 50m, é a árvore que traz o pinhão.</p>
-    </div>
-
-    <div class="card">
-        <h3>Jacarandá</h3>
-        <p><em>Jacaranda mimosifolia</em></p>
-        <p>Floresce entre setembro e novembro, flores roxas que enchem ruas de cor.</p>
-    </div>
-    <div class="card">
-        <h3>Oiti</h3>
-        <p><em>Licania tomentosa</em></p>
-        <p>Floresce entre setembro e novembro, usada em praças e avenidas por sua sombra ampla.</p>
-    </div>
-    <div class="card">
-        <h3>Mangueira</h3>
-        <p><em>Mangifera indica</em></p>
-        <p>Frutifica entre dezembro e março. É uma frutífera tropical, muito cultivada em quintais e praças.</p>
-    </div>
-    <div class="card">
-        <h3>Laranjeira</h3>
-        <p><em>Citrus sinensis</em></p>
-        <p>Frutifica entre junho e setembro. Produz laranjas doces muito usadas para sucos, comum em pomares urbanos.</p>
-    </div>
-    <div class="card">
-        <h3>Ameixeira</h3>
-        <p><em>Prunus domestica</em></p>
-        <p>Frutifica entre julho e setembro. É uma árvore pequena que produz frutos em cachos.</p>
-    </div>
- <div class="card">
-        <h3>Pitangueira</h3>
-        <p><em>Eugenia uniflora</em></p>
-        <p>Frutifica entre setembro e março. Tem frutos pequenos e vermelhos, muito usados em jardins urbanos.</p>
-    </div>
-
-
-
-</div>
-
+      <div id="grid" class="grid" aria-live="polite">
+        <!-- cards serão inseridos por JS -->
+      </div>
     </section>
+  </main>
 
-    <footer>
-        <p>© 2025 ArboCity — Construindo cidades mais verdes.</p>
-    </footer>
+  <footer style="background: #185100; color:#fff; text-align:center; padding:16px 0;">
+    <div class="container">© 2025 ArboCity — Construindo cidades mais verdes.</div>
+  </footer>
+
+  <!-- Modal -->
+  <div id="backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal" role="document" aria-labelledby="modalTitle">
+      <div class="modal-media" id="modalMedia">
+        <!-- imagem -->
+      </div>
+      <div class="modal-content">
+        <h3 id="modalTitle">Nome Popular</h3>
+        <div class="sci" id="modalSci">Nome científico</div>
+        <div class="modal-row">
+          <div class="meta" id="modalType">Tipo: —</div>
+          <div class="meta" id="modalPeriod">Floração/Frutificação: —</div>
+        </div>
+        <div class="desc" id="modalDesc">Descrição</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="closeBtn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== DADOS (substitua data.image pelos seus caminhos depois) ===== */
+    const trees = [
+      {
+        id: 'ipe-amarelo',
+        name: 'Ipê Amarelo',
+        sci: 'Handroanthus albus',
+        type: 'Árvore urbana',
+        period: 'Agosto – Setembro',
+        desc: 'Floresce entre agosto e setembro, muito comum em ruas e praças; flores amarelas vibrantes.',
+        image: '' // coloque caminho da imagem: "imagens/ipe.jpg"
+      },
+      {
+        id: 'araucaria',
+        name: 'Araucária',
+        sci: 'Araucaria angustifolia',
+        type: 'Árvore nativa / simbólica',
+        period: 'Setembro – Outubro',
+        desc: 'Árvore símbolo do sul do Brasil, pode atingir até 50 m. Possui pinhas grandes que produzem pinhão.',
+        image: ''
+      },
+      {
+        id: 'jacaranda',
+        name: 'Jacarandá',
+        sci: 'Jacaranda mimosifolia',
+        type: 'Árvore urbana',
+        period: 'Setembro – Novembro',
+        desc: 'Popular pelas flores roxas que colorem avenidas e praças na primavera.',
+        image: ''
+      },
+      {
+        id: 'oiti',
+        name: 'Oiti',
+        sci: 'Licania tomentosa',
+        type: 'Árvore urbana',
+        period: 'Primavera',
+        desc: 'Usada em praças e avenidas pela sombra ampla; resistente e de copa densa.',
+        image: ''
+      },
+      {
+        id: 'mangueira',
+        name: 'Mangueira',
+        sci: 'Mangifera indica',
+        type: 'Frutífera',
+        period: 'Dezembro – Março',
+        desc: 'Frutifica no verão; muito cultivada em quintais e praças por seus frutos abundantes.',
+        image: ''
+      },
+      {
+        id: 'laranjeira',
+        name: 'Laranjeira',
+        sci: 'Citrus sinensis',
+        type: 'Frutífera',
+        period: 'Junho – Setembro',
+        desc: 'Produz laranjas doces muito usadas para sucos; comum em pomares urbanos.',
+        image: ''
+      },
+      {
+        id: 'ameixeira',
+        name: 'Ameixeira',
+        sci: 'Prunus domestica',
+        type: 'Frutífera',
+        period: 'Julho – Setembro',
+        desc: 'Árvore pequena que produz frutos em cachos; flores delicadas no inverno.',
+        image: ''
+      },
+      {
+        id: 'pitangueira',
+        name: 'Pitangueira',
+        sci: 'Eugenia uniflora',
+        type: 'Frutífera',
+        period: 'Setembro – Março',
+        desc: 'Frutos pequenos e vermelhos, muito usados em jardins urbanos e pomares domésticos.',
+        image: ''
+      }
+    ];
+
+    /* ===== Helpers ===== */
+    const grid = document.getElementById('grid');
+    const backdrop = document.getElementById('backdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSci = document.getElementById('modalSci');
+    const modalType = document.getElementById('modalType');
+    const modalPeriod = document.getElementById('modalPeriod');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalMedia = document.getElementById('modalMedia');
+    const closeBtn = document.getElementById('closeBtn');
+
+    function makePlaceholderSVG(name){
+      // gera um SVG dataURL simples com texto (para quando não há imagem)
+      const txt = encodeURIComponent(name);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'>
+        <rect width='100%' height='100%' fill='#e9e9e9'/>
+        <g fill='#bdbdbd' transform='translate(200,180)'>
+          <path d='M200 0c55 0 100 45 100 100s-45 100-100 100-100-45-100-100S145 0 200 0z' />
+          <rect x='110' y='210' width='180' height='270' rx='8'/>
+          <rect x='140' y='220' width='120' height='200' rx='6'/>
+        </g>
+        <text x='50%' y='92%' font-size='36' font-family='Arial, Helvetica, sans-serif' fill='#a0a0a0' text-anchor='middle'>${txt}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + svg;
+    }
+
+    function createCard(t){
+      const btn = document.createElement('button');
+      btn.className = 'card-btn';
+      btn.setAttribute('type','button');
+      btn.setAttribute('aria-label', 'Abrir detalhes de ' + t.name);
+
+      const media = document.createElement('div');
+      media.className = 'card-media';
+
+      const img = document.createElement('img');
+      img.alt = t.name;
+      // se houver imagem definida, usa; senão usa placeholder SVG
+      img.src = t.image && t.image.trim() ? t.image : makePlaceholderSVG(t.name);
+      media.appendChild(img);
+
+      const body = document.createElement('div');
+      body.className = 'card-body';
+      body.innerHTML = `<div class="card-title">${t.name}</div>
+                        <div class="card-sub">${t.sci}</div>`;
+
+      btn.appendChild(media);
+      btn.appendChild(body);
+
+      btn.addEventListener('click', () => openModal(t));
+
+      return btn;
+    }
+
+    function renderGrid(){
+      grid.innerHTML = '';
+      trees.forEach(t => grid.appendChild(createCard(t)));
+    }
+
+    /* ===== MODAL ===== */
+    function openModal(t){
+      modalTitle.textContent = t.name;
+      modalSci.textContent = t.sci;
+      modalType.textContent = 'Tipo: ' + (t.type || '—');
+      modalPeriod.textContent = 'Floração/Frutificação: ' + (t.period || '—');
+      modalDesc.textContent = t.desc || '';
+
+      // imagem grande
+      modalMedia.innerHTML = '';
+      const img = document.createElement('img');
+      img.alt = t.name + ' — imagem';
+      img.src = t.image && t.image.trim() ? t.image : makePlaceholderSVG(t.name);
+      modalMedia.appendChild(img);
+
+      backdrop.style.display = 'flex';
+      backdrop.setAttribute('aria-hidden', 'false');
+
+      // foco para acessibilidade
+      closeBtn.focus();
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(){
+      backdrop.style.display = 'none';
+      backdrop.setAttribute('aria-hidden','true');
+      document.body.style.overflow = '';
+    }
+
+    // eventos
+    backdrop.addEventListener('click', (ev) => {
+      if (ev.target === backdrop) closeModal();
+    });
+    closeBtn.addEventListener('click', closeModal);
+
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && backdrop.style.display === 'flex') {
+        closeModal();
+      }
+    });
+
+    /* ===== Inicialização ===== */
+    renderGrid();
+  </script>
 </body>
 </html>
+
+
