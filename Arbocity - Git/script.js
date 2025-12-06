@@ -87,3 +87,4 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', initLeaflet);
+
